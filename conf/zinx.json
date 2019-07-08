@@ -1,0 +1,9 @@
+{
+    "Host": "0.0.0.0",
+    "TCPPort": 7777,
+    "Name": "DemoServer",
+    "Version": "0.5.0",
+    "MaxPackageSize": 10000,
+    "MaxConn": 2048,
+    "WorkerPoolSize": 5
+}
