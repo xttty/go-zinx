@@ -1,25 +1,29 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"zinx/util"
 	"zinx/ziface"
 )
 
 // Connection IConnection接口的实现
 type Connection struct {
-	TCPServer      ziface.IServer     // 该连接属于的tcp服务
-	Conn           *net.TCPConn       // 当前连接原始的socket套接字
-	ConnID         uint32             // 当前连接ID
-	isClosed       bool               // 当前连接是否关闭
-	ExitBuffChan   chan bool          // 告知该连接已经退出/停止的channel
-	MsgHandler     ziface.IMsgHandler // 消息管理
-	MsgChan        chan []byte        // 读写分离后消息传递管道
-	MsgBuffChan    chan []byte        //读写分离后带缓冲的消息管道
-	ExitReaderChan chan bool          // 读取协程关闭通知
-	ExitWriterChan chan bool          // 写协程关闭通知
+	TCPServer      ziface.IServer         // 该连接属于的tcp服务
+	Conn           *net.TCPConn           // 当前连接原始的socket套接字
+	ConnID         uint32                 // 当前连接ID
+	isClosed       bool                   // 当前连接是否关闭
+	ExitBuffChan   chan bool              // 告知该连接已经退出/停止的channel
+	MsgHandler     ziface.IMsgHandler     // 消息管理
+	MsgChan        chan []byte            // 读写分离后消息传递管道
+	MsgBuffChan    chan []byte            //读写分离后带缓冲的消息管道
+	ExitReaderChan chan bool              // 读取协程关闭通知
+	ExitWriterChan chan bool              // 写协程关闭通知
+	property       map[string]interface{} //连接属性
+	propertyLock   sync.RWMutex           // 连接属性修改锁
 }
 
 // NewConnection 新建一个连接
@@ -35,6 +39,7 @@ func NewConnection(server ziface.IServer, conn *net.TCPConn, connID uint32, hand
 		MsgBuffChan:    make(chan []byte, util.GlobalObject.MaxMsgChanLen),
 		ExitReaderChan: make(chan bool, 1),
 		ExitWriterChan: make(chan bool, 1),
+		property:       make(map[string]interface{}),
 	}
 	// 连接添加进入连接池
 	server.GetConnMgr().Add(c)
@@ -158,6 +163,10 @@ func (c *Connection) Stop() {
 	c.TCPServer.CallOnConnStop(c)
 	// 关闭socket连接
 	c.Conn.Close()
+	// 清空连接属性
+	for key := range c.property {
+		c.RemoveProperty(key)
+	}
 
 	// 通知缓存队列中的读数据业务，该连接已经关闭
 	fmt.Println("prepare closing channel")
@@ -211,4 +220,34 @@ func (c *Connection) SendBuffMsg(msgID uint32, data []byte) error {
 	}
 	c.MsgBuffChan <- sendMsg
 	return nil
+}
+
+// SetProperty 设置连接属性
+func (c *Connection) SetProperty(key string, value interface{}) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+
+	if _, exist := c.property[key]; !exist {
+		c.property[key] = value
+	}
+}
+
+// GetProperty 获取连接属性
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	defer c.propertyLock.RUnlock()
+
+	value, exist := c.property[key]
+	if !exist {
+		return nil, errors.New("key is not exist")
+	}
+	return value, nil
+}
+
+// RemoveProperty 删除连接属性
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+
+	delete(c.property, key)
 }

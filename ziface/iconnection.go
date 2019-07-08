@@ -20,7 +20,10 @@ type IConnection interface {
 	SendMsg(msgID uint32, data []byte) error
 	// 发送消息，带缓冲区
 	SendBuffMsg(msgID uint32, data []byte) error
+	//设置连接属性
+	SetProperty(key string, value interface{})
+	// 获取连接属性
+	GetProperty(key string) (interface{}, error)
+	// 移除连接属性
+	RemoveProperty(key string)
 }
-
-// HandleFunc 定义一个统一处理链接业务的接口
-// type HandleFunc func(*net.TCPConn, []byte, int) error

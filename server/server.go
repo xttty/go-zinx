@@ -19,6 +19,8 @@ type NumberRouter struct {
 // PreHandle PingRouter自己的实现
 func (pr *PingRouter) PreHandle(rq ziface.IRequest) {
 	fmt.Println("Call Router PreHandle")
+	rq.GetConnection().SetProperty("Name", "ping router")
+	rq.GetConnection().SetProperty("Home", "www.xty.test")
 }
 
 // Handle PingRouter自己的实现
@@ -52,6 +54,12 @@ func connStartCallback(conn ziface.IConnection) {
 }
 
 func connStopCallback(conn ziface.IConnection) {
+	if name, err := conn.GetProperty("Name"); err == nil {
+		fmt.Println("connection property name is", name)
+	}
+	if home, err := conn.GetProperty("Home"); err == nil {
+		fmt.Println("connection property home is", home)
+	}
 	fmt.Println(conn.RemoteAddr(), "has closed!")
 }
 
