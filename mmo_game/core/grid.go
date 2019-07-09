@@ -57,5 +57,5 @@ func (g *Grid) GetPlayerIDs() []int {
 }
 
 func (g *Grid) String() string {
-	return fmt.Sprintf("Grid id: %d, minX: %d, maxX: %d, minY: %d, maxY: %d, playerIDs: %v", g.GID, g.MinX, g.MaxX, g.MinY, g.MaxY, g.playerIDs)
+	return fmt.Sprintf("Grid id: %d, minX: %d, maxX: %d, minY: %d, maxY: %d, playerIDs: %v\n", g.GID, g.MinX, g.MaxX, g.MinY, g.MaxY, g.playerIDs)
 }

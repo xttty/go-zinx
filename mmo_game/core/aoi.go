@@ -28,10 +28,10 @@ func NewAOIManager(minX int, maxX int, minY int, maxY int, cntX int, cntY int) *
 		for j := 0; j < cntY; j++ {
 			gid := j*cntX + i
 			aoi.grids[gid] = NewGrid(gid,
-				minX+j*aoi.gridWidth(),
-				minX+(j+1)*aoi.gridWidth(),
-				minY+i*aoi.gridHeight(),
-				minY+(i+1)*aoi.gridHeight())
+				minX+i*aoi.gridWidth(),
+				minX+(i+1)*aoi.gridWidth(),
+				minY+j*aoi.gridHeight(),
+				minY+(j+1)*aoi.gridHeight())
 		}
 	}
 	return aoi
@@ -54,4 +54,43 @@ func (aoi *AOIManager) String() string {
 		s += grid.String()
 	}
 	return s
+}
+
+// GetSurroundGridByGID 获取周围格子
+func (aoi *AOIManager) GetSurroundGridByGID(gID int, level int) []*Grid {
+	var surroundGrids []*Grid
+	grid, exist := aoi.grids[gID]
+	if !exist {
+		return surroundGrids
+	}
+	// 最左边界
+	minX := grid.MinX - level*aoi.gridWidth()
+	if minX < aoi.MinX {
+		minX = aoi.MinX
+	}
+	// 最右边界
+	maxX := grid.MaxX + level*aoi.gridWidth()
+	if maxX > aoi.MaxX {
+		maxX = aoi.MaxX
+	}
+	// 最上边界
+	minY := grid.MinY - level*aoi.gridHeight()
+	if minY < aoi.MinY {
+		minY = aoi.MinY
+	}
+	// 最下边界
+	maxY := grid.MaxY + level*aoi.gridHeight()
+	if maxY > aoi.MaxY {
+		maxY = aoi.MaxY
+	}
+	for x := minX; x < maxX; x += aoi.gridWidth() {
+		for y := minY; y < maxY; y += aoi.gridHeight() {
+			surroundGID := ((y-aoi.MinY)/aoi.gridHeight())*aoi.CntX + (x-aoi.MinX)/aoi.gridWidth()
+			surroundGrid, exist := aoi.grids[surroundGID]
+			if surroundGID != gID && exist {
+				surroundGrids = append(surroundGrids, surroundGrid)
+			}
+		}
+	}
+	return surroundGrids
 }
